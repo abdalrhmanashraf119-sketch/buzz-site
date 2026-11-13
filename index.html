@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Cairo Buzz 24 — أخبار مصر لحظة بلحظة</title>
+<meta name="description" content="أحدث عناوين الأخبار في مصر: كورة وسياسة واقتصاد، مع روابط المصادر الأصلية."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body data-ads="true">
+<div class="topbar">
+  <a class="logo" href="index.html">CAIRO BUZZ <span>24</span></a>
+  <div class="nav"><a href="about.html">عن الموقع</a><a href="contact.html">تواصل معانا</a></div>
+</div>
+
+<div class="filters" id="filters">
+  <button class="fbtn active" data-c="all">الكل</button>
+  <button class="fbtn" data-c="football">كورة</button>
+  <button class="fbtn" data-c="politics">سياسة</button>
+  <button class="fbtn" data-c="economy">اقتصاد</button>
+</div>
+<div class="list" id="list"><div class="state">جاري تحميل الأخبار...</div></div>
+<p class="note">بنعرض عناوين الأخبار مع رابط المصدر الأصلي. الحقوق محفوظة لأصحابها.</p>
+
+<div class="footer">
+  <div><a href="about.html">عن الموقع</a> · <a href="privacy.html">سياسة الخصوصية</a> · <a href="contact.html">تواصل معانا</a></div>
+  <div id="footLinks" style="margin-top:6px"></div>
+  <div style="margin-top:6px">© Cairo Buzz 24</div>
+</div>
+
+<script src="site-config.js"></script>
+<script src="site.js"></script>
+<script>
+const S = window.SITE;
+let all = [], filter = 'all';
+const LABEL = { football:'كورة', politics:'سياسة', economy:'اقتصاد' };
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const toDate = s => !s ? new Date() : new Date(/[zZ]|[+\-]\d{2}:?\d{2}$/.test(s) ? s : s + 'Z');
+function ago(s){ const d=(Date.now()-toDate(s))/60000; if(d<1)return 'الآن'; if(d<60)return `منذ ${Math.floor(d)} د`; if(d<1440)return `منذ ${Math.floor(d/60)} س`; return `منذ ${Math.floor(d/1440)} ي`; }
+function safeUrl(u){ return /^https?:\/\//.test(u||'') ? u : '#'; }
+
+function render() {
+  const list = document.getElementById('list');
+  const rows = filter === 'all' ? all : all.filter(n => n.cat === filter);
+  if (!rows.length) { list.innerHTML = '<div class="state">مفيش أخبار في القسم ده دلوقتي</div>'; return; }
+  list.innerHTML = rows.map(n => `
+    <div class="item">
+      <div class="meta"><span class="badge b-${esc(n.cat)}">${esc(LABEL[n.cat] || n.cat)}</span><span>${ago(n.date)}</span></div>
+      <div class="title">${esc(n.title)}</div>
+      <div class="meta"><a class="read" href="${esc(safeUrl(n.link))}" target="_blank" rel="noopener nofollow">اقرأ الخبر في المصدر ←</a><span>${esc(n.source)}</span></div>
+    </div>`).join('');
+}
+async function load() {
+  try {
+    const r = await fetch(S.API_URL);
+    if (!r.ok) throw 0;
+    all = await r.json();
+    all.sort((a, b) => toDate(b.date) - toDate(a.date));
+    render();
+  } catch (e) {
+    if (!all.length) document.getElementById('list').innerHTML = '<div class="state">تعذر تحميل الأخبار، جرّب تعمل ريفرش</div>';
+  }
+}
+document.getElementById('filters').addEventListener('click', e => {
+  const b = e.target.closest('.fbtn'); if (!b) return;
+  filter = b.dataset.c;
+  document.querySelectorAll('.fbtn').forEach(x => x.classList.toggle('active', x === b));
+  render();
+});
+load(); setInterval(load, 5 * 60 * 1000);
+</script>
+</body>
+</html>
